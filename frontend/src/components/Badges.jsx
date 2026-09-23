@@ -1,7 +1,6 @@
 import { Avatar, Box, Chip, Tooltip } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import { CATEGORIES, STATUS_LABELS } from '../constants'
-import { USERS } from '../data/mockData'
 
 /** Solid colored pill for an incident status. */
 export function StatusPill({ status, size = 'small' }) {
@@ -42,21 +41,22 @@ export function EscalatedFlag() {
   )
 }
 
-/** Initials avatar; a dashed "?" circle when unassigned. */
-export function UserAvatar({ userId, size = 28 }) {
-  const user = userId ? USERS[userId] : null
-  const initials = user?.name.split(' ').map((p) => p[0]).join('')
+const AVATAR_COLORS = ['#6B4EF5', '#2F6BEA', '#16A36F', '#E4A11B', '#E3455A', '#0E9AA7', '#C2410C']
+
+/** Initials avatar colored by user id; a dashed "?" circle when there's no user (unassigned). */
+export function UserAvatar({ id, name, size = 28 }) {
+  const initials = name?.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('')
   return (
-    <Tooltip title={user ? user.name : 'Unassigned'}>
+    <Tooltip title={name ?? 'Unassigned'}>
       <Avatar
         sx={{
           width: size, height: size, fontSize: size * 0.38, fontWeight: 700,
-          ...(user
-            ? { bgcolor: user.color, color: '#fff' }
+          ...(name
+            ? { bgcolor: AVATAR_COLORS[(id ?? 0) % AVATAR_COLORS.length], color: '#fff' }
             : { bgcolor: 'transparent', color: 'text.disabled', border: '1.5px dashed', borderColor: 'divider' }),
         }}
       >
-        {user ? initials : '?'}
+        {name ? initials : '?'}
       </Avatar>
     </Tooltip>
   )

@@ -1,96 +1,80 @@
-// In-memory stand-in for the backend "incidents" service.
-// Each method matches a planned endpoint; replace the bodies with fetch() calls once the Lambdas exist:
-//   list()                       -> GET  /api/incidents
-//   create(user, data)           -> POST /api/incidents
-//   changeStatus(user, id, ...)  -> POST /api/incidents/{id}/status
-//   assign(user, id, engineerId) -> POST /api/incidents/{id}/assign
-//   escalate(user, id, reason)   -> POST /api/incidents/{id}/escalate
-//   addNote(user, id, body)      -> POST /api/incidents/{id}/notes
+// Incidents API (backend/incidents). Maps snake_case API rows to the camelCase shape the UI uses.
 
-import { ESCALATION_KEYWORD, REASON_REQUIRED, STATUS_LABELS } from '../constants'
-import { INCIDENTS, USERS } from '../data/mockData'
-import { allowedTransitions } from '../utils/incidents'
+import { STATUS_LABELS } from '../constants'
+import { request } from './apiClient'
 
-let incidents = structuredClone(INCIDENTS)
-const NOW_LABEL = '12:15'
-
-const snapshot = () => Promise.resolve(structuredClone(incidents))
-
-function find(id) {
-  const incident = incidents.find((i) => i.id === id)
-  if (!incident) throw new Error('This incident no longer exists.')
-  return incident
+function toIncident(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    category: row.category,
+    priority: row.priority,
+    status: row.status,
+    assetTag: row.asset_tag,
+    seatId: row.seat_id,
+    location: {
+      building: row.building_name,
+      floor: row.floor_name || `Floor ${row.floor_level}`,
+      seat: row.seat_code,
+    },
+    reporterId: row.reporter_id,
+    reporterName: row.reporter_name,
+    assigneeId: row.assignee_id,
+    assigneeName: row.assignee_name,
+    escalationReason: row.is_escalated ? row.escalation_reason : null,
+    blockedReason: row.blocked_reason,
+    createdAt: row.created_at,
+    acknowledgedAt: row.acknowledged_at,
+    resolvedAt: row.resolved_at,
+    closedAt: row.closed_at,
+    timeline: row.notes ? toTimeline(row.notes, row.history ?? []) : null,
+  }
 }
 
-function logEvent(incident, user, text) {
-  incident.notes.push({ authorId: user.id, time: NOW_LABEL, system: text })
+/** Merge notes and status history into one chronological thread for the detail drawer. */
+function toTimeline(notes, history) {
+  const events = history.map((h) => {
+    let text
+    if (h.from_status === null || h.from_status === h.to_status) text = h.reason
+    else text = `Status ${STATUS_LABELS[h.from_status]} → ${STATUS_LABELS[h.to_status]}${h.to_status === 'blocked' && h.reason ? `: ${h.reason}` : ''}`
+    return { key: `h${h.id}`, kind: 'event', at: h.changed_at, authorId: h.changed_by, authorName: h.changed_by_name, text }
+  })
+  const messages = notes.map((n) => ({
+    key: `n${n.id}`, kind: 'note', at: n.created_at, authorId: n.author_id, authorName: n.author_name, text: n.body,
+  }))
+  // Stable sort: a status event and its resolution note share a timestamp, and the event stays first.
+  return [...events, ...messages].sort((a, b) => new Date(a.at) - new Date(b.at))
 }
 
 export const incidentService = {
-  list: snapshot,
-
-  async create(user, { title, description, category, priority, seat, assetTag }) {
-    if (!title?.trim() || !description?.trim() || !seat) {
-      throw new Error('Add a title, choose where it is, and describe the problem.')
-    }
-    const flagged = ESCALATION_KEYWORD.test(description)
-    const incident = {
-      id: Math.max(...incidents.map((i) => i.id)) + 1,
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      priority: flagged ? 'critical' : priority,
-      status: 'open',
-      seat,
-      assetTag: assetTag?.trim() || null,
-      reporterId: user.id,
-      assigneeId: null,
-      age: '0m',
-      escalationReason: flagged ? 'Auto-flagged — report contains “extreme”' : null,
-      notes: [],
-    }
-    incidents = [incident, ...incidents]
-    return structuredClone(incident)
+  async list() {
+    return (await request('incidents', '', { query: { limit: 500 } })).map(toIncident)
   },
 
-  async changeStatus(user, id, to, reason = '') {
-    const incident = find(id)
-    if (!allowedTransitions(incident, user).some(([s]) => s === to)) {
-      throw new Error(`You can't move this ticket to ${STATUS_LABELS[to]}.`)
-    }
-    if (REASON_REQUIRED.has(to) && !reason.trim()) {
-      throw new Error(to === 'blocked'
-        ? "Add what's blocking this ticket before marking it blocked."
-        : 'Add a resolution note so the reporter knows what was fixed.')
-    }
-    if (to === 'blocked') incident.blockedReason = reason.trim()
-    if (to === 'resolved') incident.notes.push({ authorId: user.id, time: NOW_LABEL, body: reason.trim() })
-    logEvent(incident, user, `Status ${STATUS_LABELS[incident.status]} → ${STATUS_LABELS[to]}${to === 'blocked' ? `: ${reason.trim()}` : ''}`)
-    incident.status = to
-    return structuredClone(incident)
+  async get(id) {
+    return toIncident(await request('incidents', `/${id}`))
   },
 
-  async assign(user, id, engineerId) {
-    if (user.role !== 'admin') throw new Error('Only facility admins can assign tickets.')
-    if (!engineerId) throw new Error('Choose an engineer to assign.')
-    const incident = find(id)
-    incident.assigneeId = engineerId
-    logEvent(incident, user, `Assigned to ${USERS[engineerId].name}`)
-    return structuredClone(incident)
+  async create({ title, description, category, priority, seatId, assetTag }) {
+    const body = { title, description, category, priority, seat_id: seatId || null, asset_tag: assetTag || null }
+    return toIncident(await request('incidents', '', { method: 'POST', body }))
   },
 
-  async escalate(user, id, reason) {
-    if (!reason?.trim()) throw new Error('Say why this needs escalating so the admin can prioritise it.')
-    const incident = find(id)
-    incident.escalationReason = `Employee requested — ${reason.trim()}`
-    logEvent(incident, user, 'Escalation requested')
-    return structuredClone(incident)
+  async changeStatus(id, status, reason) {
+    return toIncident(await request('incidents', `/${id}/status`, { method: 'POST', body: { status, ...(reason && { reason }) } }))
   },
 
-  async addNote(user, id, body) {
-    if (!body?.trim()) throw new Error('Write a note before posting.')
-    const incident = find(id)
-    incident.notes.push({ authorId: user.id, time: NOW_LABEL, body: body.trim() })
-    return structuredClone(incident)
+  async assign(id, engineerId) {
+    return toIncident(await request('incidents', `/${id}/assign`, { method: 'POST', body: { assignee_id: engineerId || null } }))
+  },
+
+  async escalate(id, reason) {
+    return toIncident(await request('incidents', `/${id}/escalate`, { method: 'POST', body: { reason } }))
+  },
+
+  async addNote(id, body) {
+    await request('incidents', `/${id}/notes`, { method: 'POST', body: { body } })
+    return this.get(id)
   },
 }

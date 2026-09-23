@@ -327,6 +327,9 @@ else
     echo -e "  Detected Mac/Windows - using host: host.docker.internal"
 fi
 
+# Copy shared backend code into each Python service
+"$SCRIPT_DIR/sync-shared.sh"
+
 # Install pip requirements into each Python service directory for hot-reload
 # Skip if requirements.txt hasn't changed since last install (avoids slow PyPI lookups)
 shopt -s nullglob
@@ -339,8 +342,16 @@ for req in "$PROJECT_ROOT"/backend/*/requirements.txt; do
         continue
     fi
     echo -e "  Installing pip requirements for $(basename "$svc_dir")..."
-    pip install --quiet --target="$svc_dir" -r "$req" 2>/dev/null || true
-    echo "$REQS_HASH" > "$HASH_FILE"
+    # Fetch wheels built for the Lambda runtime (python3.13, Linux x86_64), not the host's Python.
+    if pip install --quiet --upgrade --target="$svc_dir" \
+        --python-version 3.13 --platform manylinux2014_x86_64 --implementation cp --only-binary=:all: \
+        -r "$req" > /tmp/pip-install.log 2>&1; then
+        echo "$REQS_HASH" > "$HASH_FILE"
+    else
+        echo -e "  ✗ pip install failed for $(basename "$svc_dir"):"
+        tail -n 5 /tmp/pip-install.log | sed 's/^/    /'
+        exit 1
+    fi
 done
 
 # Install npm dependencies into each Node.js service directory for hot-reload

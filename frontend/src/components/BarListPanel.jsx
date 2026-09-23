@@ -3,10 +3,11 @@ import { fonts } from '../theme'
 import Panel from './Panel'
 
 /** Ranked horizontal bars. rows: [{ label, detail?, value }] */
-export default function BarListPanel({ title, subtitle, rows }) {
-  const max = Math.max(...rows.map((r) => r.value))
+export default function BarListPanel({ title, subtitle, rows, emptyText = 'No data yet.' }) {
+  const max = Math.max(1, ...rows.map((r) => r.value))
   return (
     <Panel title={title} subtitle={subtitle}>
+      {rows.length === 0 && <Typography sx={{ fontSize: 13, color: 'text.disabled' }}>{emptyText}</Typography>}
       <Stack spacing={1.1}>
         {rows.map((r) => (
           <Tooltip key={`${r.label}-${r.detail ?? ''}`} title={`${r.label}${r.detail ? ` · ${r.detail}` : ''}: ${r.value} incidents`} placement="left">

@@ -142,7 +142,7 @@ def _translate_db_error(exc: psycopg.Error) -> ApiError | None:
     details = {"constraint": constraint} if constraint else None
     if isinstance(exc, pg_errors.UniqueViolation):
         return Conflict("A record with the same unique value already exists", details)
-    if isinstance(exc, pg_errors.ForeignKeyViolation):
+    if isinstance(exc, (pg_errors.ForeignKeyViolation, pg_errors.RestrictViolation)):
         return Conflict("Referenced record does not exist or the record is still in use", details)
     if isinstance(exc, (pg_errors.CheckViolation, pg_errors.NotNullViolation)):
         return ValidationError("One or more fields have invalid values", details)

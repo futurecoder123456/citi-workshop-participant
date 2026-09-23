@@ -53,6 +53,9 @@ ENVIRONMENT=${1:-"aws"}
 echo "INFO: Deploying infrastructure..."
 echo "INFO: Environment - $ENVIRONMENT"
 
+# Copy shared backend code into each service before Terraform packages them
+"$SCRIPT_DIR/sync-shared.sh"
+
 # Change to infrastructure directory
 cd "$INFRA_DIR"
 

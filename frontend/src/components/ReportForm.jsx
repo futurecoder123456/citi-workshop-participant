@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Box, Button, MenuItem, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import { CATEGORIES, ESCALATION_KEYWORD, PRIORITIES } from '../constants'
-import { LOCATIONS } from '../data/mockData'
 import { fonts } from '../theme'
 import Banner from './Banner'
 import Panel from './Panel'
 
-const EMPTY = { title: '', category: 'hardware', seat: '', assetTag: '', priority: 'medium', description: '' }
+const EMPTY = { title: '', category: 'hardware', seatId: '', assetTag: '', priority: 'medium', description: '' }
 
 const toggleSx = {
   flexWrap: 'wrap', gap: 0.75,
@@ -18,11 +17,12 @@ const toggleSx = {
 }
 
 /** Employee self-service report form. Words like "extreme" warn that the ticket will be escalated. */
-export default function ReportForm({ onSubmit }) {
+export default function ReportForm({ seats, onSubmit }) {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
-  const flagged = ESCALATION_KEYWORD.test(form.description)
+  // Same rule as the backend: the keyword in the title or details escalates the ticket.
+  const flagged = ESCALATION_KEYWORD.test(`${form.title} ${form.description}`)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -50,8 +50,9 @@ export default function ReportForm({ onSubmit }) {
           </ToggleButtonGroup>
         </Stack>
 
-        <TextField id="report-seat" select label="Where?" required size="small" value={form.seat} onChange={(e) => set({ seat: e.target.value })}>
-          {Object.entries(LOCATIONS).map(([id, parts]) => <MenuItem key={id} value={id}>{parts.join(' › ')}</MenuItem>)}
+        <TextField id="report-seat" select label="Where?" required size="small" value={form.seatId} onChange={(e) => set({ seatId: e.target.value })}
+          helperText={seats.length === 0 ? 'No locations set up yet. Ask a facility admin.' : undefined}>
+          {seats.map((s) => <MenuItem key={s.id} value={s.id}>{s.label}</MenuItem>)}
         </TextField>
         <TextField id="report-asset" label="Asset tag (optional)" placeholder="MON-0042" size="small"
           value={form.assetTag} onChange={(e) => set({ assetTag: e.target.value })}

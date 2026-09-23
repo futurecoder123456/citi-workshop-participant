@@ -38,7 +38,8 @@ const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', '*');
+  // "*" does not cover Authorization in browsers, so name it explicitly
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-Dev-User-Id, *');
   res.setHeader('Access-Control-Max-Age', '86400');
 
   // Handle preflight
@@ -101,7 +102,10 @@ const server = http.createServer((req, res) => {
       'accept': headers.accept || 'application/json',
       'content-type': headers['content-type'] || 'application/json',
       'user-agent': headers['user-agent'] || 'proxy-server',
-      'host': target.host
+      'host': target.host,
+      // Forward credentials so the backend can identify the caller
+      ...(headers.authorization && { 'authorization': headers.authorization }),
+      ...(headers['x-dev-user-id'] && { 'x-dev-user-id': headers['x-dev-user-id'] })
     }
   };
 

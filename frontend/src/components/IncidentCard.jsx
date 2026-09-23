@@ -1,11 +1,10 @@
 import { Box, Card, CardActionArea, Stack, Typography } from '@mui/material'
 import { alpha } from '@mui/material/styles'
-import { LOCATIONS } from '../data/mockData'
 import { fonts } from '../theme'
+import { timeAgo } from '../utils/incidents'
 import { CategoryTag, EscalatedFlag, PriorityTag, UserAvatar } from './Badges'
 
 export default function IncidentCard({ incident, onOpen }) {
-  const [building, , seat] = LOCATIONS[incident.seat]
   const escalated = Boolean(incident.escalationReason)
   return (
     <Card
@@ -20,11 +19,11 @@ export default function IncidentCard({ incident, onOpen }) {
         }),
       })}
     >
-      <CardActionArea onClick={() => onOpen(incident.id)} sx={{ p: 1.4 }}>
+      <CardActionArea id={`incident-card-${incident.id}`} onClick={() => onOpen(incident.id)} sx={{ p: 1.4 }}>
         <Stack spacing={0.9}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <Typography sx={{ fontFamily: fonts.mono, fontSize: 11.5, color: 'text.disabled' }}>INC-{incident.id}</Typography>
-            {escalated ? <EscalatedFlag /> : <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{incident.age} ago</Typography>}
+            {escalated ? <EscalatedFlag /> : <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{timeAgo(incident.createdAt)} ago</Typography>}
           </Stack>
           <Typography sx={{ fontWeight: 600, fontSize: 13.5, lineHeight: 1.3 }}>{incident.title}</Typography>
           <Stack direction="row" spacing={0.6}>
@@ -34,11 +33,11 @@ export default function IncidentCard({ incident, onOpen }) {
           {incident.status === 'blocked' && incident.blockedReason && (
             <Typography sx={(t) => ({ fontSize: 12, color: t.palette.fixline.status.blocked })}>⏸ {incident.blockedReason}</Typography>
           )}
-          <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>
-              {building} · <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11 }}>{seat.replace('Seat ', '')}</Box>
+          <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography sx={{ fontSize: 12, color: 'text.disabled', minWidth: 0 }}>
+              {incident.location.building} · <Box component="span" sx={{ fontFamily: fonts.mono, fontSize: 11 }}>{incident.location.seat}</Box>
             </Typography>
-            <UserAvatar userId={incident.assigneeId} size={22} />
+            <UserAvatar id={incident.assigneeId} name={incident.assigneeName} size={22} />
           </Stack>
         </Stack>
       </CardActionArea>

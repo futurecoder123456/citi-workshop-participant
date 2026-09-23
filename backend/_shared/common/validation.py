@@ -1,5 +1,6 @@
 """Declarative field validation for request bodies and query strings."""
 
+from datetime import time
 from typing import Any
 
 from common.errors import ValidationError
@@ -75,6 +76,15 @@ class Validator:
                 self.errors[name] = "Must be true or false"
             else:
                 self.values[name] = value
+        return self
+
+    def time_of_day(self, name: str, required: bool = False) -> "Validator":
+        """Validate an "HH:MM" string and return a datetime.time."""
+        if self._present(name, required):
+            try:
+                self.values[name] = time.fromisoformat(self.data[name])
+            except (TypeError, ValueError):
+                self.errors[name] = "Must be a time like 09:00"
         return self
 
     def validate(self) -> dict[str, Any]:

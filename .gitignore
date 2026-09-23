@@ -256,3 +256,10 @@ tfplan
 
 # Snyk Security Extension - AI Rules (auto-generated)
 .github/instructions/snyk_rules.instructions.md
+
+# Backend services: deploy scripts add pip packages and a synced copy of
+# backend/_shared/common into each service folder. Track only the source.
+backend/*/*
+!backend/*/function.py
+!backend/*/requirements.txt
+!backend/_*/*
