@@ -41,7 +41,8 @@ function toTimeline(notes, history) {
     return { key: `h${h.id}`, kind: 'event', at: h.changed_at, authorId: h.changed_by, authorName: h.changed_by_name, text }
   })
   const messages = notes.map((n) => ({
-    key: `n${n.id}`, kind: 'note', at: n.created_at, authorId: n.author_id, authorName: n.author_name, text: n.body,
+    key: `n${n.id}`, kind: 'note', noteId: n.id, at: n.created_at, authorId: n.author_id, authorName: n.author_name, text: n.body,
+    edited: n.updated_at !== n.created_at,
   }))
   // Stable sort: a status event and its resolution note share a timestamp, and the event stays first.
   return [...events, ...messages].sort((a, b) => new Date(a.at) - new Date(b.at))
@@ -75,6 +76,26 @@ export const incidentService = {
 
   async addNote(id, body) {
     await request('incidents', `/${id}/notes`, { method: 'POST', body: { body } })
+    return this.get(id)
+  },
+
+  /** Reporter (while Open) or admin: body uses API field names, e.g. { title, priority }. */
+  async update(id, body) {
+    return toIncident(await request('incidents', `/${id}`, { method: 'PUT', body }))
+  },
+
+  /** Admin only. */
+  remove(id) {
+    return request('incidents', `/${id}`, { method: 'DELETE' })
+  },
+
+  async updateNote(id, noteId, body) {
+    await request('incidents', `/${id}/notes/${noteId}`, { method: 'PUT', body: { body } })
+    return this.get(id)
+  },
+
+  async deleteNote(id, noteId) {
+    await request('incidents', `/${id}/notes/${noteId}`, { method: 'DELETE' })
     return this.get(id)
   },
 }

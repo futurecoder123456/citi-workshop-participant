@@ -109,7 +109,7 @@ export default function EngineersAdmin({ onToast }) {
       </Stack>
       {loadError && <Typography role="alert" color="error">{loadError}</Typography>}
 
-      <Paper elevation={0} sx={(t) => ({ borderRadius: 3.5, boxShadow: t.palette.fixline.shadow, overflowX: 'auto' })}>
+      <Paper elevation={0} sx={(t) => ({ borderRadius: 1.25, boxShadow: t.palette.fixline.shadow, overflowX: 'auto' })}>
         <Table size="small" sx={{ minWidth: 760, '& th': { fontSize: 12, color: 'text.disabled', fontWeight: 600, whiteSpace: 'nowrap' } }}>
           <TableHead>
             <TableRow>
@@ -140,8 +140,8 @@ export default function EngineersAdmin({ onToast }) {
                   </Stack>
                 </TableCell>
                 <TableCell>{CATEGORIES[e.specialty]}</TableCell>
-                <TableCell sx={{ fontFamily: fonts.mono, fontSize: 12.5, whiteSpace: 'nowrap' }}>{formatHour(e.shift[0])}–{formatHour(e.shift[1])}</TableCell>
-                <TableCell sx={{ fontFamily: fonts.mono, fontSize: 12.5, whiteSpace: 'nowrap' }}>{formatHour(e.lunch[0])}–{formatHour(e.lunch[1])}</TableCell>
+                <TableCell sx={{ fontFamily: fonts.data, fontSize: 12.5, whiteSpace: 'nowrap' }}>{formatHour(e.shift[0])}–{formatHour(e.shift[1])}</TableCell>
+                <TableCell sx={{ fontFamily: fonts.data, fontSize: 12.5, whiteSpace: 'nowrap' }}>{formatHour(e.lunch[0])}–{formatHour(e.lunch[1])}</TableCell>
                 <TableCell><AvailabilityChip availability={e.availability} /></TableCell>
                 <TableCell align="right" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>{e.active}</TableCell>
                 <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>

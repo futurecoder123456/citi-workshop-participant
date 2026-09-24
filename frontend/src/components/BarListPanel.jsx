@@ -17,7 +17,7 @@ export default function BarListPanel({ title, subtitle, rows, emptyText = 'No da
                   {r.label}{' '}
                   {r.detail && <Box component="small" sx={{ color: 'text.disabled' }}>{r.detail}</Box>}
                 </span>
-                <Typography sx={{ fontFamily: fonts.mono, fontWeight: 600, fontSize: 12 }}>{r.value}</Typography>
+                <Typography sx={{ fontFamily: fonts.data, fontWeight: 600, fontSize: 12 }}>{r.value}</Typography>
               </Stack>
               <Box sx={(t) => ({ height: 8, borderRadius: '4px', bgcolor: t.palette.fixline.surface2, overflow: 'hidden' })}>
                 <Box sx={{ height: '100%', width: `${(r.value / max) * 100}%`, bgcolor: 'primary.main', borderRadius: '0 4px 4px 0' }} />

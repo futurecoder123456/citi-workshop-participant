@@ -39,12 +39,9 @@ resource "aws_cloudfront_distribution" "this" {
     }
   }
 
-  custom_error_response {
-    error_code            = 404
-    error_caching_min_ttl = 300
-    response_code         = 200
-    response_page_path    = "/index.html"
-  }
+  # No 404 -> /index.html rewrite: it applies to every origin, so API 404s ("not found or not
+  # yours") would come back as the HTML page with status 200 and be cached. The React app has no
+  # client-side routes (everything is served from /), so it doesn't need the fallback.
 
   # logging_config {
   #   include_cookies = false

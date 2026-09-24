@@ -10,14 +10,14 @@ const EMPTY = { title: '', category: 'hardware', seatId: '', assetTag: '', prior
 const toggleSx = {
   flexWrap: 'wrap', gap: 0.75,
   '& .MuiToggleButton-root': {
-    flex: 1, border: '1px solid', borderColor: 'divider', borderRadius: '10px !important', py: 0.9,
+    flex: 1, border: '1px solid', borderColor: 'divider', borderRadius: '8px !important', py: 0.9,
     textTransform: 'none', fontWeight: 600, color: 'text.primary', bgcolor: 'background.paper',
   },
   '& .MuiToggleButton-root.Mui-selected': { borderColor: 'primary.main', bgcolor: (t) => t.palette.fixline.accentSoft },
 }
 
 /** Employee self-service report form. Words like "extreme" warn that the ticket will be escalated. */
-export default function ReportForm({ seats, onSubmit }) {
+export default function ReportForm({ seats, onSubmit, embedded = false }) {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
@@ -35,8 +35,7 @@ export default function ReportForm({ seats, onSubmit }) {
     }
   }
 
-  return (
-    <Panel title="Report an issue" subtitle="Goes to the facility desk">
+  const content = (
       <Box component="form" id="report-form" onSubmit={submit} noValidate
         sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.75 }}>
         <TextField id="report-title" label="What's wrong?" placeholder="e.g. Docking station won't charge" required size="small"
@@ -56,7 +55,7 @@ export default function ReportForm({ seats, onSubmit }) {
         </TextField>
         <TextField id="report-asset" label="Asset tag (optional)" placeholder="MON-0042" size="small"
           value={form.assetTag} onChange={(e) => set({ assetTag: e.target.value })}
-          slotProps={{ htmlInput: { style: { fontFamily: fonts.mono } } }} />
+          slotProps={{ htmlInput: { style: { fontFamily: fonts.data } } }} />
 
         <Stack spacing={0.75} sx={{ gridColumn: '1 / -1' }}>
           <Typography component="label" sx={{ fontSize: 12, fontWeight: 600, color: 'text.secondary' }}>Priority</Typography>
@@ -78,6 +77,8 @@ export default function ReportForm({ seats, onSubmit }) {
 
         <Button id="report-submit" type="submit" variant="contained" sx={{ gridColumn: '1 / -1', justifySelf: 'end' }}>Submit report</Button>
       </Box>
-    </Panel>
   )
+
+  // Inside a dialog the dialog supplies the frame and title.
+  return embedded ? content : <Panel title="Report an issue" subtitle="Goes to the facility desk">{content}</Panel>
 }

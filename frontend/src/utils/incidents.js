@@ -2,6 +2,9 @@ import { ACTIVE_STATUSES, WORKFLOW } from '../constants'
 
 export const isActive = (incident) => ACTIVE_STATUSES.has(incident.status)
 
+/** 3 -> "INC-0003" */
+export const ticketId = (id) => `INC-${String(id).padStart(4, '0')}`
+
 /** Format a decimal hour (13.5) as "13:30". */
 export function formatHour(hour) {
   const h = String(Math.floor(hour)).padStart(2, '0')
@@ -47,15 +50,18 @@ export function allowedTransitions(incident, user) {
 }
 
 /** Client-side narrowing of the incidents the API already scoped to this user. */
-export function filterIncidents(incidents, { query, category, priority, escalatedOnly }) {
+export function filterIncidents(incidents, { query, building, category, priority, assignee, escalatedOnly }) {
   const q = query.trim().toLowerCase()
   return incidents.filter((i) => {
+    if (building && i.location.building !== building) return false
+    if (assignee === 'unassigned' && i.assigneeId) return false
+    if (assignee && assignee !== 'unassigned' && i.assigneeId !== assignee) return false
     if (category && i.category !== category) return false
     if (priority && i.priority !== priority) return false
     if (escalatedOnly && !i.escalationReason) return false
     if (q) {
       const haystack = [
-        i.title, i.description, `INC-${i.id}`, i.assetTag,
+        i.title, i.description, ticketId(i.id), `INC-${i.id}`, i.assetTag,
         i.location.building, i.location.floor, i.location.seat, i.assigneeName,
       ].join(' ').toLowerCase()
       if (!haystack.includes(q)) return false

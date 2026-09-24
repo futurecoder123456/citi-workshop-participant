@@ -60,8 +60,11 @@ export async function request(service, path = '', { method = 'GET', body, query 
   }
 
   if (res.status === 204) return null
-  const data = await res.json().catch(() => null)
-  if (res.ok) return data
+  // Anything that isn't JSON (e.g. an HTML error page from a proxy or CDN) is treated as a failure.
+  const isJson = (res.headers.get('content-type') ?? '').includes('application/json')
+  const data = isJson ? await res.json().catch(() => null) : null
+  if (res.ok && isJson) return data
+  if (res.ok) throw new ApiError(502, { code: 'bad_response', message: 'The server sent an unexpected response. Try again.' })
 
   if (res.status === 401 && token) unauthorizedHandler()
   throw new ApiError(res.status, data?.error ?? { message: `Request failed (${res.status}). Try again.` })

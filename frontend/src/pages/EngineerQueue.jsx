@@ -36,7 +36,7 @@ export default function EngineerQueue({ user, incidents, visible, summary, filte
         { label: 'Waiting on reporter', value: mine.filter((i) => i.status === 'resolved').length, note: 'resolved, not yet closed' },
         { label: 'My avg. acknowledge', ...acknowledge, note: `last ${summary?.windowDays ?? 90} days` },
       ]} />
-      <FilterBar filters={filters} onChange={onFiltersChange} />
+      <FilterBar filters={filters} onChange={onFiltersChange} incidents={incidents} />
       <KanbanBoard incidents={visible} onOpen={onOpen} />
     </>
   )

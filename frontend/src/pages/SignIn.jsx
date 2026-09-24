@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Box, Button, Paper, Stack, Tab, Tabs, TextField, Typography } from '@mui/material'
-import { BrandMark } from '../components/Sidebar'
+import { Wordmark } from '../components/TopBar'
 import { authService } from '../services/authService'
-import { fonts } from '../theme'
 
 /** Sign in, or create an employee account with an @acme.inc email. */
 export default function SignIn({ onSignedIn }) {
@@ -37,14 +36,11 @@ export default function SignIn({ onSignedIn }) {
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'grid', placeItems: 'center', px: 2, py: 4, bgcolor: 'background.default' }}>
-      <Paper elevation={0} sx={(t) => ({ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 }, borderRadius: 4, boxShadow: t.palette.fixline.shadow })}>
+      <Paper elevation={0} sx={(t) => ({ width: '100%', maxWidth: 420, p: { xs: 3, sm: 4 }, borderRadius: 1.5, boxShadow: t.palette.fixline.shadow })}>
         <Stack spacing={2.5}>
-          <Stack direction="row" spacing={1.25} sx={{ alignItems: 'center' }}>
-            <BrandMark ground="background.paper" />
-            <Box>
-              <Typography sx={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em', lineHeight: 1.1 }}>Fixline</Typography>
-              <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>Report and track facility issues at ACME</Typography>
-            </Box>
+          <Stack spacing={1}>
+            <Wordmark size={24} />
+            <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Report and track facility issues across ACME buildings.</Typography>
           </Stack>
 
           <Tabs value={mode} onChange={(_, v) => { setMode(v); setError(''); setFieldErrors({}) }} variant="fullWidth">

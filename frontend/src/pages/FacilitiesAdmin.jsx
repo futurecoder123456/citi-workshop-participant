@@ -25,7 +25,9 @@ const floorLabel = (f) => (f.name ? `${f.name} (level ${f.level})` : `Floor ${f.
 export default function FacilitiesAdmin({ onToast }) {
   const [buildings, setBuildings] = useState([])
   const [selectedId, setSelectedId] = useState(null)
-  const [floors, setFloors] = useState([])
+  // Floors are stored with the building they belong to, so a slow load can never show one
+  // building's floors (and seat buttons) under another building's heading.
+  const [floorState, setFloorState] = useState({ buildingId: null, floors: [] })
   const [form, setForm] = useState(null)        // props for FormDialog, or null
   const [confirm, setConfirm] = useState(null)  // request for ConfirmDialog, or null
   const [loadError, setLoadError] = useState('')
@@ -52,7 +54,7 @@ export default function FacilitiesAdmin({ onToast }) {
     facilityService.floors(selectedId)
       // Fetch each floor's seats in parallel.
       .then((list) => Promise.all(list.map(async (f) => ({ ...f, seats: await facilityService.seats(f.id) }))))
-      .then((withSeats) => { if (!cancelled) setFloors(withSeats) })
+      .then((withSeats) => { if (!cancelled) setFloorState({ buildingId: selectedId, floors: withSeats }) })
       .catch((e) => { if (!cancelled) setLoadError(e.message) })
     return () => { cancelled = true }
   }, [selectedId, reloadKey])
@@ -70,6 +72,7 @@ export default function FacilitiesAdmin({ onToast }) {
     setConfirm({ title, message, confirmLabel: 'Delete', action: async () => { await remove(); reload(done) } })
 
   const selected = buildings.find((b) => b.id === selectedId)
+  const floors = floorState.buildingId === selectedId ? floorState.floors : null  // null = still loading
 
   return (
     <>
@@ -102,7 +105,7 @@ export default function FacilitiesAdmin({ onToast }) {
                   onClick={() => setSelectedId(b.id)}
                   aria-pressed={active}
                   sx={(t) => ({
-                    justifyContent: 'space-between', textAlign: 'left', borderRadius: 2.5, px: 1.5, py: 1.1, gap: 1,
+                    justifyContent: 'space-between', textAlign: 'left', borderRadius: 1, px: 1.5, py: 1.1, gap: 1,
                     border: '1px solid', borderColor: active ? 'primary.main' : 'divider',
                     bgcolor: active ? alpha(t.palette.primary.main, 0.08) : 'transparent',
                   })}
@@ -111,7 +114,7 @@ export default function FacilitiesAdmin({ onToast }) {
                     <Typography sx={{ fontWeight: 600, fontSize: 14 }} noWrap>{b.name}</Typography>
                     <Typography sx={{ fontSize: 12, color: 'text.disabled' }}>{b.floor_count} floors · {b.seat_count} seats</Typography>
                   </Box>
-                  <Typography sx={{ fontFamily: fonts.mono, fontSize: 12, color: 'text.secondary' }}>{b.code}</Typography>
+                  <Typography sx={{ fontFamily: fonts.data, fontSize: 12, color: 'text.secondary' }}>{b.code}</Typography>
                 </ButtonBase>
               )
             })}
@@ -139,7 +142,7 @@ export default function FacilitiesAdmin({ onToast }) {
               }
             >
               <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>
-                <Box component="span" sx={{ fontFamily: fonts.mono }}>{selected.code}</Box>
+                <Box component="span" sx={{ fontFamily: fonts.data }}>{selected.code}</Box>
                 {selected.address ? ` · ${selected.address}` : ' · No address on file'}
               </Typography>
               <Button id="add-floor" variant="outlined" size="small" sx={{ alignSelf: 'flex-start' }}
@@ -151,10 +154,13 @@ export default function FacilitiesAdmin({ onToast }) {
               </Button>
             </Panel>
 
-            {floors.length === 0 && (
+            {floors === null && (
+              <Typography sx={{ fontSize: 13, color: 'text.disabled', px: 1 }}>Loading floors…</Typography>
+            )}
+            {floors?.length === 0 && (
               <Typography sx={{ fontSize: 13, color: 'text.disabled', px: 1 }}>No floors yet. Add a floor, then add seats to it.</Typography>
             )}
-            {floors.map((f) => (
+            {floors?.map((f) => (
               <Panel
                 key={f.id}
                 title={floorLabel(f)}
@@ -184,7 +190,7 @@ export default function FacilitiesAdmin({ onToast }) {
                       }, s)}
                       onDelete={() => askDelete(`Delete seat ${s.code}?`, 'Tickets reported at this seat will block the delete.',
                         () => facilityService.deleteSeat(s.id), `Deleted seat ${s.code}`)}
-                      sx={{ fontFamily: fonts.mono, fontWeight: 600 }}
+                      sx={{ fontFamily: fonts.data, fontWeight: 600 }}
                     />
                   ))}
                   <Chip

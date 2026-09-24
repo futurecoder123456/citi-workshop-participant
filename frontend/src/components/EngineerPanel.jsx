@@ -49,7 +49,7 @@ export default function EngineerPanel({ engineers }) {
         </Box>
       ))}
       {engineers.length > 0 && (
-        <Stack direction="row" sx={{ justifyContent: 'space-between', pl: '38px', fontFamily: fonts.mono, fontSize: 10, color: 'text.disabled' }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between', pl: '38px', fontFamily: fonts.data, fontSize: 10, color: 'text.disabled' }}>
           {[6, 10, 14, 18, 22].map((h) => <span key={h}>{String(h).padStart(2, '0')}</span>)}
         </Stack>
       )}
